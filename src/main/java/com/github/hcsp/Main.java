@@ -32,37 +32,59 @@ public class Main {
                 currentLink = "https:" + currentLink;
             }
             //我们想要的新浪的链接，则处理(拿到链接)
-            if (currentLink.contains("news.sina.cn")
-                    && !(currentLink.contains("passport.sina.cn") && !(currentLink.contains("passport.weibo.com")))
-                    && !currentLink.contains("roll.d.html")
-                    || "https://sina.cn".equals(currentLink)) {
-                CloseableHttpClient httpclient = HttpClients.createDefault();
-                HttpGet httpGet = new HttpGet(currentLink);
-                httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:79.0) Gecko/20100101 Firefox/79.0");
-
-                try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
-                    System.out.println(response.getStatusLine());
-                    System.out.println(currentLink);
-
-                    HttpEntity entity = response.getEntity();
-                    String html = EntityUtils.toString(entity, "utf-8");
-
-                    Document doc = Jsoup.parse(html);
-                    Elements aTags = doc.select("a");
-                    for (Element aTag : aTags) {
-                        linkPool.add(aTag.attr("href"));
-                    }
-
-                    Elements articleTags = doc.select("article");
-                    if (!articleTags.isEmpty()) {
-                        for (Element e : articleTags) {
-                            System.out.println(e.child(0).text());
-                        }
-                    }
-                    handledLink.add(currentLink);
-                }
+            if (isNewsLink(currentLink) && !isLoginLink(currentLink)
+                    && !isRollNewsLink(currentLink) || "https://sina.cn".equals(currentLink)) {
+                HttpGetAndParseHtml(currentLink, linkPool, handledLink);
             }
         }
     }
-}
 
+    private static void HttpGetAndParseHtml(String currentLink, List<String> linkPool, Set<String> handledLink) throws IOException {
+        CloseableHttpClient httpclient = HttpClients.createDefault();
+        HttpGet httpGet = new HttpGet(currentLink);
+        httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:79.0) Gecko/20100101 Firefox/79.0");
+
+        try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+            System.out.println(response.getStatusLine());
+            System.out.println(currentLink);
+
+            HttpEntity entity = response.getEntity();
+            String html = EntityUtils.toString(entity, "utf-8");
+
+            Document doc = Jsoup.parse(html);
+
+            obtainAllHrefsAndAddToLinkPool(doc, linkPool);
+            obtainNewsTitle(doc);
+
+            handledLink.add(currentLink);
+        }
+    }
+
+    private static void obtainNewsTitle(Document doc) {
+        Elements articleTags = doc.select("article");
+        if (!articleTags.isEmpty()) {
+            for (Element e : articleTags) {
+                System.out.println(e.child(0).text());
+            }
+        }
+    }
+
+    private static void obtainAllHrefsAndAddToLinkPool(Document doc, List<String> linkPool) {
+        Elements aTags = doc.select("a");
+        for (Element aTag : aTags) {
+            linkPool.add(aTag.attr("href"));
+        }
+    }
+
+    private static boolean isRollNewsLink(String currentLink) {
+        return currentLink.contains("roll.d.html");
+    }
+
+    private static boolean isLoginLink(String currentLink) {
+        return currentLink.contains("passport.sina.cn") || currentLink.contains("passport.weibo.com");
+    }
+
+    private static boolean isNewsLink(String currentLink) {
+        return currentLink.contains("news.sina.cn");
+    }
+}
