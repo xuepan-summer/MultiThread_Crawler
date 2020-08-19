@@ -12,51 +12,99 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class Main {
-    public static void main(String[] args) throws IOException {
-        List<String> linkPool = new ArrayList<>();
-        linkPool.add("https://sina.cn");
-        Set<String> handledLink = new HashSet<>();
-        while (!linkPool.isEmpty()) {
-            String currentLink = linkPool.remove(linkPool.size() - 1);
+    public static void main(String[] args) throws SQLException, IOException {
+        Connection connection = DriverManager.getConnection("jdbc:h2:file:E:/Crawler_Project/MultiThread_Crawler/news", "root", "root");
+        while (true) {
+            List<String> linkPool = executeSelectSql(connection, "select * from LINKS_TO_BE_PROCESSED");
 
-            if (handledLink.contains(currentLink)) {
-                continue;
-            }
-            if (currentLink.startsWith("//")) {
-                currentLink = "https:" + currentLink;
-            }
-            //我们想要的新浪的链接，则处理(拿到链接)
-            if (isNewsLink(currentLink) && !isLoginLink(currentLink)
-                    && !isRollNewsLink(currentLink) || "https://sina.cn".equals(currentLink)) {
-                HttpGetAndParseHtml(currentLink, linkPool, handledLink);
+            if (!linkPool.isEmpty()) {
+                String currentLink = linkPool.remove(linkPool.size() - 1);
+
+                updateIntoDatabase(connection, "delete from LINKS_TO_BE_PROCESSED where link = ?", currentLink);
+
+                if (!linksHasBeenProcessed(connection, currentLink)) {
+                    if (isInterestedLink(currentLink)) {
+                        Document doc = HttpGetAndParseHtml(currentLink);
+
+                        obtainRelatedLinksAndUpdateIntoDatabase(connection, linkPool, doc);
+                        obtainNewsTitle(doc);
+                        updateIntoDatabase(connection, "insert into LINKS_ALREADY_PROCESSED (link) values (?)", currentLink);
+                    }
+                }
             }
         }
     }
 
-    private static void HttpGetAndParseHtml(String currentLink, List<String> linkPool, Set<String> handledLink) throws IOException {
-        CloseableHttpClient httpclient = HttpClients.createDefault();
+    private static boolean isInterestedLink(String currentLink) {
+        return isNewsLink(currentLink) && !isLoginLink(currentLink) && !isRollNewsLink(currentLink) || "https://sina.cn".equals(currentLink);
+    }
+
+    private static boolean linksHasBeenProcessed(Connection connection, String currentLink) throws SQLException {
+        ResultSet resultSet = null;
+        try (PreparedStatement statement = connection.prepareStatement("select link from LINKS_ALREADY_PROCESSED where link = ?")) {
+            statement.setString(1, currentLink);
+            resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                return true;
+            }
+        } finally {
+            if (resultSet != null) {
+                resultSet.close();
+            }
+        }
+        return false;
+    }
+
+    private static void updateIntoDatabase(Connection connection, String sql, String currentLink) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, currentLink);
+            statement.executeUpdate();
+        }
+    }
+
+    private static List<String> executeSelectSql(Connection connection, String sql) throws SQLException {
+        List<String> result = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                result.add(resultSet.getString(1));
+            }
+            return result;
+        }
+    }
+
+    private static Document HttpGetAndParseHtml(String currentLink) throws IOException {
+        CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpGet httpGet = new HttpGet(currentLink);
         httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:79.0) Gecko/20100101 Firefox/79.0");
+        Document doc;
 
-        try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+        try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
             System.out.println(response.getStatusLine());
             System.out.println(currentLink);
-
             HttpEntity entity = response.getEntity();
             String html = EntityUtils.toString(entity, "utf-8");
+            doc = Jsoup.parse(html);
+        }
+        return doc;
+    }
 
-            Document doc = Jsoup.parse(html);
+    private static void obtainRelatedLinksAndUpdateIntoDatabase(Connection connection, List<String> linkPool, Document doc) throws SQLException {
+        for (Element aTag : doc.select("a")) {
+            String href = aTag.attr("href");
+            linkPool.add(href);
 
-            obtainAllHrefsAndAddToLinkPool(doc, linkPool);
-            obtainNewsTitle(doc);
-
-            handledLink.add(currentLink);
+            updateIntoDatabase(connection, "insert into LINKS_TO_BE_PROCESSED (link) values (?)", href);
         }
     }
 
@@ -69,20 +117,15 @@ public class Main {
         }
     }
 
-    private static void obtainAllHrefsAndAddToLinkPool(Document doc, List<String> linkPool) {
-        Elements aTags = doc.select("a");
-        for (Element aTag : aTags) {
-            linkPool.add(aTag.attr("href"));
-        }
-    }
-
     private static boolean isRollNewsLink(String currentLink) {
         return currentLink.contains("roll.d.html");
     }
 
+
     private static boolean isLoginLink(String currentLink) {
         return currentLink.contains("passport.sina.cn") || currentLink.contains("passport.weibo.com");
     }
+
 
     private static boolean isNewsLink(String currentLink) {
         return currentLink.contains("news.sina.cn");
