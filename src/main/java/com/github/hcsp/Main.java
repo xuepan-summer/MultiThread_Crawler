@@ -18,36 +18,35 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Main {
     @SuppressFBWarnings("DMI_CONSTANT_DB_PASSWORD")
     public static void main(String[] args) throws SQLException, IOException {
         Connection connection = DriverManager.getConnection("jdbc:h2:file:E:/Crawler_Project/MultiThread_Crawler/news", "root", "root");
-        while (true) {
-            List<String> linkPool = executeSelectSql(connection, "select * from LINKS_TO_BE_PROCESSED");
+        String currentLink;
+        while ((currentLink = getNextLinkAndDelete(connection)) != null) {
 
-            if (!linkPool.isEmpty()) {
+            if (!linksHasBeenProcessed(connection, currentLink)) {
 
-                String currentLink = linkPool.remove(linkPool.size() - 1);
+                if (isInterestedLink(currentLink)) {
+                    Document doc = HttpGetAndParseHtml(currentLink);
 
-                updateIntoDatabase(connection, "delete from LINKS_TO_BE_PROCESSED where link = ?", currentLink);
+                    obtainRelatedLinksAndUpdateIntoDatabase(connection, doc);
 
-                if (!linksHasBeenProcessed(connection, currentLink)) {
+                    obtainNewsTitle(doc);
 
-                    if (isInterestedLink(currentLink)) {
-                        Document doc = HttpGetAndParseHtml(currentLink);
-
-                        obtainRelatedLinksAndUpdateIntoDatabase(connection, linkPool, doc);
-
-                        obtainNewsTitle(doc);
-
-                        updateIntoDatabase(connection, "insert into LINKS_ALREADY_PROCESSED (link) values (?)", currentLink);
-                    }
+                    updateIntoDatabase(connection, "insert into LINKS_ALREADY_PROCESSED (link) values (?)", currentLink);
                 }
             }
         }
+    }
+
+    private static String getNextLinkAndDelete(Connection connection) throws SQLException {
+        String currentLink = getNextLink(connection, "select * from LINKS_TO_BE_PROCESSED LIMIT 1");
+        if (currentLink != null) {
+            updateIntoDatabase(connection, "delete from LINKS_TO_BE_PROCESSED where link = ?", currentLink);
+        }
+        return currentLink;
     }
 
     private static boolean isInterestedLink(String currentLink) {
@@ -78,11 +77,11 @@ public class Main {
         }
     }
 
-    private static List<String> executeSelectSql(Connection connection, String sql) throws SQLException {
-        List<String> result = new ArrayList<>();
+    private static String getNextLink(Connection connection, String sql) throws SQLException {
+        String result = null;
         try (PreparedStatement statement = connection.prepareStatement(sql); ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
-                result.add(resultSet.getString(1));
+                result = resultSet.getString(1);
             }
             return result;
         }
@@ -104,11 +103,9 @@ public class Main {
         return doc;
     }
 
-    private static void obtainRelatedLinksAndUpdateIntoDatabase(Connection connection, List<String> linkPool, Document doc) throws SQLException {
+    private static void obtainRelatedLinksAndUpdateIntoDatabase(Connection connection, Document doc) throws SQLException {
         for (Element aTag : doc.select("a")) {
             String href = aTag.attr("href");
-            linkPool.add(href);
-
             updateIntoDatabase(connection, "insert into LINKS_TO_BE_PROCESSED (link) values (?)", href);
         }
     }
