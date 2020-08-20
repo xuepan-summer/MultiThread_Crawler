@@ -1,5 +1,6 @@
 package com.github.hcsp;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -17,31 +18,35 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Main {
+    @SuppressFBWarnings("DMI_CONSTANT_DB_PASSWORD")
     public static void main(String[] args) throws SQLException, IOException {
         Connection connection = DriverManager.getConnection("jdbc:h2:file:E:/Crawler_Project/MultiThread_Crawler/news", "root", "root");
-        while (true) {
-            List<String> linkPool = executeSelectSql(connection, "select * from LINKS_TO_BE_PROCESSED");
+        String currentLink;
+        while ((currentLink = getNextLinkAndDelete(connection)) != null) {
 
-            if (!linkPool.isEmpty()) {
-                String currentLink = linkPool.remove(linkPool.size() - 1);
+            if (!linksHasBeenProcessed(connection, currentLink)) {
 
-                updateIntoDatabase(connection, "delete from LINKS_TO_BE_PROCESSED where link = ?", currentLink);
+                if (isInterestedLink(currentLink)) {
+                    Document doc = HttpGetAndParseHtml(currentLink);
 
-                if (!linksHasBeenProcessed(connection, currentLink)) {
-                    if (isInterestedLink(currentLink)) {
-                        Document doc = HttpGetAndParseHtml(currentLink);
+                    obtainRelatedLinksAndUpdateIntoDatabase(connection, doc);
 
-                        obtainRelatedLinksAndUpdateIntoDatabase(connection, linkPool, doc);
-                        obtainNewsTitle(doc);
-                        updateIntoDatabase(connection, "insert into LINKS_ALREADY_PROCESSED (link) values (?)", currentLink);
-                    }
+                    obtainNewsTitle(doc);
+
+                    updateIntoDatabase(connection, "insert into LINKS_ALREADY_PROCESSED (link) values (?)", currentLink);
                 }
             }
         }
+    }
+
+    private static String getNextLinkAndDelete(Connection connection) throws SQLException {
+        String currentLink = getNextLink(connection, "select * from LINKS_TO_BE_PROCESSED LIMIT 1");
+        if (currentLink != null) {
+            updateIntoDatabase(connection, "delete from LINKS_TO_BE_PROCESSED where link = ?", currentLink);
+        }
+        return currentLink;
     }
 
     private static boolean isInterestedLink(String currentLink) {
@@ -72,12 +77,11 @@ public class Main {
         }
     }
 
-    private static List<String> executeSelectSql(Connection connection, String sql) throws SQLException {
-        List<String> result = new ArrayList<>();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            ResultSet resultSet = statement.executeQuery();
+    private static String getNextLink(Connection connection, String sql) throws SQLException {
+        String result = null;
+        try (PreparedStatement statement = connection.prepareStatement(sql); ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
-                result.add(resultSet.getString(1));
+                result = resultSet.getString(1);
             }
             return result;
         }
@@ -99,11 +103,9 @@ public class Main {
         return doc;
     }
 
-    private static void obtainRelatedLinksAndUpdateIntoDatabase(Connection connection, List<String> linkPool, Document doc) throws SQLException {
+    private static void obtainRelatedLinksAndUpdateIntoDatabase(Connection connection, Document doc) throws SQLException {
         for (Element aTag : doc.select("a")) {
             String href = aTag.attr("href");
-            linkPool.add(href);
-
             updateIntoDatabase(connection, "insert into LINKS_TO_BE_PROCESSED (link) values (?)", href);
         }
     }
@@ -121,11 +123,9 @@ public class Main {
         return currentLink.contains("roll.d.html");
     }
 
-
     private static boolean isLoginLink(String currentLink) {
         return currentLink.contains("passport.sina.cn") || currentLink.contains("passport.weibo.com");
     }
-
 
     private static boolean isNewsLink(String currentLink) {
         return currentLink.contains("news.sina.cn");
