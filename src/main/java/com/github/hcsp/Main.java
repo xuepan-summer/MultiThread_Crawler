@@ -18,6 +18,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.stream.Collectors;
 
 public class Main {
     @SuppressFBWarnings("DMI_CONSTANT_DB_PASSWORD")
@@ -33,7 +34,7 @@ public class Main {
 
                     obtainRelatedLinksAndUpdateIntoDatabase(connection, doc);
 
-                    obtainNewsTitle(doc);
+                    obtainNewsInfoAndUpdateIntoDatabase(connection, doc, currentLink);
 
                     updateIntoDatabase(connection, "insert into LINKS_ALREADY_PROCESSED (link) values (?)", currentLink);
                 }
@@ -94,7 +95,6 @@ public class Main {
         Document doc;
 
         try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-            System.out.println(response.getStatusLine());
             System.out.println(currentLink);
             HttpEntity entity = response.getEntity();
             String html = EntityUtils.toString(entity, "utf-8");
@@ -106,15 +106,26 @@ public class Main {
     private static void obtainRelatedLinksAndUpdateIntoDatabase(Connection connection, Document doc) throws SQLException {
         for (Element aTag : doc.select("a")) {
             String href = aTag.attr("href");
-            updateIntoDatabase(connection, "insert into LINKS_TO_BE_PROCESSED (link) values (?)", href);
+            if (!href.isEmpty() && !href.toLowerCase().startsWith("javascript")) {
+                updateIntoDatabase(connection, "insert into LINKS_TO_BE_PROCESSED (link) values (?)", href);
+            }
         }
     }
 
-    private static void obtainNewsTitle(Document doc) {
+    private static void obtainNewsInfoAndUpdateIntoDatabase(Connection connection, Document doc, String currentLink) throws SQLException {
         Elements articleTags = doc.select("article");
         if (!articleTags.isEmpty()) {
             for (Element e : articleTags) {
-                System.out.println(e.child(0).text());
+                String title = e.child(0).text();
+                String content = e.select("p").stream().map(Element::text).collect(Collectors.joining("\n"));
+                String url = currentLink;
+
+                try (PreparedStatement statement = connection.prepareStatement("insert into news (url,title,content,created_at,updated_at) values (?,?,?,now(),now())")) {
+                    statement.setString(1, url);
+                    statement.setString(2, title);
+                    statement.setString(3, content);
+                    statement.executeUpdate();
+                }
             }
         }
     }
