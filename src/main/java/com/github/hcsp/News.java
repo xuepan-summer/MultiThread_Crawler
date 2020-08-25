@@ -2,9 +2,15 @@ package com.github.hcsp;
 
 public class News {
     private Integer id;
-    private String title;
-    private String text;
     private String url;
+    private String title;
+    private String content;
+
+    public News(String url, String title, String content) {
+        this.url = url;
+        this.title = title;
+        this.content = content;
+    }
 
     public Integer getId() {
         return id;
@@ -12,6 +18,14 @@ public class News {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 
     public String getTitle() {
@@ -22,19 +36,11 @@ public class News {
         this.title = title;
     }
 
-    public String getText() {
-        return text;
+    public String getContent() {
+        return content;
     }
 
-    public void setText(String text) {
-        this.text = text;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
+    public void setContent(String content) {
+        this.content = content;
     }
 }
