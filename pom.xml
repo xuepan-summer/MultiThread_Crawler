@@ -90,6 +90,11 @@
             <artifactId>mybatis</artifactId>
             <version>3.5.5</version>
         </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.21</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -152,7 +157,7 @@
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>6.5.5</version>
                 <configuration>
-                    <url>jdbc:h2:file:E:/Crawler_Project/MultiThread_Crawler/news</url>
+                    <url>jdbc:mysql://localhost:3306/news?useUnicode=true&amp;characterEncoding=UTF-8</url>
                     <user>root</user>
                     <password>root</password>
                 </configuration>

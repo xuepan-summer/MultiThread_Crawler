@@ -11,7 +11,7 @@
     </delete>
 
     <insert id="insertNews" parameterType="com.github.hcsp.News"><!--全限定类名！！！-->
-        insert into news (url,title,content,created_at,updated_at)
+        insert into NEWS (url,title,content,created_at,updated_at)
         <!--这个指的是new类里的url、title、content-->
         values (#{url},#{title},#{content},now(),now())
     </insert>
@@ -30,5 +30,4 @@
         </choose>
         (link) values (#{link})
     </insert>
-
 </mapper>
