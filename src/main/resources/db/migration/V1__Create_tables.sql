@@ -6,4 +6,5 @@ title text,
 content text,
 url varchar(1000),
 created_at timestamp default now(),
-updated_at timestamp default now());
+updated_at timestamp default now()
+) DEFAULT CHARSET=utf8mb4;
