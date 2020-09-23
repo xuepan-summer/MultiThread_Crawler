@@ -13,17 +13,11 @@ circleCI(辅助提高代码质量)
 flyway(进行数据库结构的版本管理)
 
 2.流程图
-![多线程爬虫及ES数据分析流程图](src/main/resources/images/MultiThreadCrawlerFlowChart.png)
+![多线程爬虫及ES数据分析流程图](https://github.com/xuepan-summer/MultiThread_Crawler/blob/master/src/main/resources/images/MultiThreadCrawlerFlowChart.png)
 
 3.业务逻辑
 
-爬取新浪新闻页
-
-使用数据库存储并进行数据分析
-
-随着数据量的增长，迁移到Elastic Search
-
-做一个简单的“新闻搜索引擎”
+爬取新浪新闻页->使用数据库存储并进行数据分析->随着数据量的增长，迁移到Elastic Search->做一个简单的“新闻搜索引擎”
 
 4.扩展
 
