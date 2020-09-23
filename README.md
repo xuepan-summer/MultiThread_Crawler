@@ -14,9 +14,7 @@ flyway(进行数据库结构的版本管理)
 
 **2.流程图**
 
-![](https://github.com/xuepan-summer/MultiThread_Crawler/blob/master/src/main/resources/images/MultiThreadCrawlerFlowChart.jpg)
-
-![](src/main/resources/images/MultiThreadCrawlerFlowChart.jpg)
+![](http://note.youdao.com/noteshare?id=9cff55ae1b4298c4593069acbcd536c7)
 
 **3.业务逻辑**
 
