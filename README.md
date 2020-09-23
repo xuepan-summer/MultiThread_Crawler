@@ -12,7 +12,10 @@ circleCI(辅助提高代码质量)
 
 flyway(进行数据库结构的版本管理)
 
-2.业务逻辑
+2.流程图
+![多线程爬虫及ES数据分析流程图](src/main/resources/images/MultiThreadCrawlerFlowChart.png)
+
+3.业务逻辑
 
 爬取新浪新闻页
 
@@ -22,7 +25,7 @@ flyway(进行数据库结构的版本管理)
 
 做一个简单的“新闻搜索引擎”
 
-3.扩展
+4.扩展
 
 (1) jdbc连接数据库，实现断点续存
 
@@ -33,3 +36,4 @@ flyway(进行数据库结构的版本管理)
 (4) 造百万数据至数据库
 
 (5) 构造ElasticSearch搜索引擎
+
