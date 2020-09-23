@@ -13,7 +13,7 @@ circleCI(辅助提高代码质量)
 flyway(进行数据库结构的版本管理)
 
 2.流程图
-![多线程爬虫及ES数据分析流程图](https://github.com/xuepan-summer/MultiThread_Crawler/blob/master/src/main/resources/images/MultiThreadCrawlerFlowChart.png)
+![多线程爬虫及ES数据分析流程图](https://github.com/xuepan-summer/MultiThread_Crawler/blob/master/src/main/resources/images/MultiThreadCrawlerFlowChart.jpg)
 
 3.业务逻辑
 
