@@ -1,6 +1,5 @@
 package com.github.hcsp;
 
-
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -25,7 +24,6 @@ public class ElasticSearchEngine {
             try (RestHighLevelClient client = new RestHighLevelClient(RestClient.builder(new HttpHost("localhost", 9200, "http")))) {
                 SearchRequest searchRequest = new SearchRequest("news");
                 searchRequest.source(new SearchSourceBuilder().query(new MultiMatchQueryBuilder(keyWord, "title", "content")));
-//                searchRequest.source().query(new MultiMatchQueryBuilder(keyWord, "title", "content"));
                 SearchResponse result = client.search(searchRequest, RequestOptions.DEFAULT);
                 result.getHits().forEach(hit -> System.out.println(hit.getSourceAsMap()));
             }
