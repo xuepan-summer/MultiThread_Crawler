@@ -2,7 +2,7 @@
 
 涉及技术：Java/HTTP/JSON/HTML/Cookie/jsoup/IDEA/MySQL/ElasticSearch
 
-**1.使用插件**
+**1. 使用插件**
 
 spotBugs(辅助发现bug)
 
@@ -12,11 +12,11 @@ circleCI(辅助提高代码质量)
 
 flyway(进行数据库结构的版本管理)
 
-**2.业务逻辑**
+**2. 业务逻辑**
 
 爬取新浪新闻页->数据库存储数据并进行数据分析->数据量增长，迁移到Elastic Search->做一个简单的“新闻搜索引擎”
 
-**3.扩展**
+**3. 扩展**
 
 (1) jdbc连接数据库，实现断点续存
 
