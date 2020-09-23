@@ -14,11 +14,11 @@ flyway(进行数据库结构的版本管理)
 
 **2.流程图**
 
-![](http://note.youdao.com/noteshare?id=9cff55ae1b4298c4593069acbcd536c7)
+![流程图](https://note.youdao.com/ynoteshare1/index.html?id=9cff55ae1b4298c4593069acbcd536c7&type=note)
 
 **3.业务逻辑**
 
-爬取新浪新闻页->使用数据库存储并进行数据分析->随着数据量的增长，迁移到Elastic Search->做一个简单的“新闻搜索引擎”
+爬取新浪新闻页->数据库存储数据并进行数据分析->数据量增长，迁移到Elastic Search->做一个简单的“新闻搜索引擎”
 
 **4.扩展**
 
